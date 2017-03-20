@@ -9,7 +9,7 @@ tool:	tool.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 libcurl:		libcurl.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ -lcurl
 
 clean:
 	rm -f $(PROGRAMS) *.csv
