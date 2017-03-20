@@ -2,6 +2,7 @@
 #include <fstream>		// for ifstream
 #include <string>		// for string
 #include <map>			// for map
+#include <mutex>			// for mutex
 
 using namespace std;
 
@@ -36,6 +37,7 @@ class ConfigFile {
 		map<string, string> config_vars;
 		void parse_config_vars(string line);
 		void init_map();
+		mutex m;
 };
 
 ConfigFile::ConfigFile(string config_filename){
@@ -68,6 +70,7 @@ void ConfigFile::display(void){
 }
 
 string ConfigFile::getValue(string key){
+	lock_guard<mutex> guard(m);
 	return config_vars[key];
 }
 

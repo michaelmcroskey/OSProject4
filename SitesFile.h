@@ -2,6 +2,7 @@
 #include <fstream>		// for ifstream
 #include <string>		// for string
 #include <queue>			// for sites
+#include <mutex>			// for mutex
 
 using namespace std;
 
@@ -13,8 +14,12 @@ class SitesFile {
 		string top();
 		void pop();
 		void display();
+		
+		bool more_urls;
+		
 	private:
 		queue<string> websites;
+		mutex m;
 };
 
 SitesFile::SitesFile(string sites_filename){
@@ -24,6 +29,7 @@ SitesFile::SitesFile(string sites_filename){
 		while (getline(sites,line)){
 			websites.push(line);
 		}
+		more_urls = true;
 		sites.close();
 	} else {
 		cout << "Error: Unable to open file "
@@ -37,6 +43,7 @@ SitesFile::~SitesFile(void){
 }
 
 void SitesFile::display(void){
+	lock_guard<mutex> guard(m);
 	while(!websites.empty()){
 		cout << websites.front() << endl;
 		websites.pop();
@@ -45,9 +52,16 @@ void SitesFile::display(void){
 }
 
 string SitesFile::top(void){
-	return websites.front();
+	lock_guard<mutex> guard(m);
+	string url = websites.front();
+	websites.pop();
+	if (websites.empty()){
+		more_urls = false;
+	}
+	return url;
 }
 
 void SitesFile::pop(void){
+	lock_guard<mutex> guard(m);
 	websites.pop();
 }

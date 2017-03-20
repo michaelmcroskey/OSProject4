@@ -6,7 +6,7 @@ PROGRAMS=	tool libcurl
 all:		tool libcurl
 
 tool:	tool.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ -lpthread
 
 libcurl:		libcurl.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lcurl

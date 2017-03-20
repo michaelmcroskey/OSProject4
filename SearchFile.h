@@ -2,6 +2,7 @@
 #include <fstream>		// for ifstream
 #include <string>		// for string
 #include <queue>			// for queries
+#include <mutex>			// for mutex
 
 using namespace std;
 
@@ -15,6 +16,7 @@ class SearchFile {
 		void display();
 	private:
 		queue<string> queries;
+		mutex m;
 };
 
 SearchFile::SearchFile(string search_filename){
@@ -37,6 +39,7 @@ SearchFile::~SearchFile(void){
 }
 
 void SearchFile::display(void){
+	lock_guard<mutex> guard(m);
 	while(!queries.empty()){
 		cout << queries.front() << endl;
 		queries.pop();
@@ -45,9 +48,11 @@ void SearchFile::display(void){
 }
 
 string SearchFile::top(void){
+	lock_guard<mutex> guard(m);
 	return queries.front();
 }
 
 void SearchFile::pop(void){
+	lock_guard<mutex> guard(m);
 	queries.pop();
 }
