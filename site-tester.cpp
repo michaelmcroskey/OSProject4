@@ -14,6 +14,7 @@
 #include "SearchFile.h"
 #include "SitesFile.h"
 #include "ConfigFile.h"
+#include "LibCurl.h"
 
 using namespace std;
 
@@ -21,7 +22,7 @@ void *fetch_url( void *args );
 
 // Utility Functions --------------------------
 void usage(int status) {
-	cout << "usage: tool <filename>" << endl;
+	cout << "usage: site-tester <filename>" << endl;
 	exit(status);
 }
 
@@ -84,6 +85,9 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
+	free(fetch_thread);
+	free(fetch_args);
+	
 	// Parsing Threads -----------------------
 	//int parse = stoi(config.getValue("NUM_PARSE"));
 	//
@@ -113,9 +117,8 @@ void *fetch_url( void *args ){
 	
 	myarg_t *m  = (myarg_t*) args;
 	
-	cout << "Parsing: " << m->url << endl;
-//	LibCurl url (m->url);
-//	m->html = url.getString();
-//	
+	LibCurl url (m->url);
+	m->html = url.getString();
+	
 	pthread_exit(NULL);
 }

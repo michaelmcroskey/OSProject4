@@ -1,15 +1,12 @@
 CXX=		g++
-CXXFLAGS=	-g -Wall -std=gnu++11
+CXXFLAGS=	-g -Wall -std=gnu++11 -lpthread -lcurl
 SHELL=		bash
-PROGRAMS=	tool libcurl
+PROGRAMS=	site-tester
 
-all:		tool libcurl
+all:		site-tester
 
-tool:	tool.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lpthread
-
-libcurl:		libcurl.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lcurl
+tool:	site-tester.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
 	rm -f $(PROGRAMS) *.csv
