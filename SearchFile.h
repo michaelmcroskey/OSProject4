@@ -11,9 +11,9 @@ class SearchFile {
 		~SearchFile();
 		
 		string top();
-		void push(string query);
+		void pop();
 		void display();
- private:
+	private:
 		queue<string> queries;
 };
 
@@ -48,7 +48,6 @@ string SearchFile::top(void){
 	return queries.front();
 }
 
-void SearchFile::push(string query){
-	queries.push(query);
-	return;
+void SearchFile::pop(void){
+	queries.pop();
 }

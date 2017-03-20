@@ -11,9 +11,9 @@ class SitesFile {
 		~SitesFile();
 		
 		string top();
-		void push(string site);
+		void pop();
 		void display();
- private:
+	private:
 		queue<string> websites;
 };
 
@@ -48,7 +48,6 @@ string SitesFile::top(void){
 	return websites.front();
 }
 
-void SitesFile::push(string site){
-	websites.push(site);
-	return;
+void SitesFile::pop(void){
+	websites.pop();
 }
