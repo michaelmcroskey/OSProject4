@@ -66,33 +66,37 @@ void init_map(map<string, string> &config_vars){
 	return;
 }
 
+void file_error(string filename){
+	cout << "Error: Unable to open file "
+		<< filename << "." << endl;
+	exit(EXIT_FAILURE);
+}
+
 // Main Execution  ----------------------------
 int main(int argc, char *argv[]) {
 	
 	map<string,string> config_vars;
 	init_map(config_vars);
+	string line;
 	
 	// Check if enough arguments
 	if (argc != 2){
 		usage(EXIT_FAILURE);
 	
-	// Open config file and parse contents
+	// Parse config file
 	} else {
-		string line, config_filename = argv[1];
+		string config_filename = argv[1];
 		ifstream config (config_filename);
-		// Try to open file
 		if (config.is_open()){
 			while (getline(config,line)){
 				parse_config_vars(line, config_vars);
 			}
 			config.close();
 		} else {
-			cout << "Error: Unable to open file " << config_filename << "." << endl;
+			file_error(config_filename);
 			exit(EXIT_FAILURE);
 		}
 	}
-
-	string line;
 	
 	// Parse search file 
 	vector<string> queries;
@@ -104,9 +108,7 @@ int main(int argc, char *argv[]) {
 		}
 		search.close();
 	} else {
-		cout << "Error: Unable to open file "
-			<< search_filename << "." << endl;
-		exit(EXIT_FAILURE);
+		file_error(search_filename);
 	}
 	
 	// Parse site file 
@@ -119,11 +121,10 @@ int main(int argc, char *argv[]) {
 		}
 		site.close();
 	} else {
-		cout << "Error: Unable to open file "
-			<< site_filename << "." << endl;
-		exit(EXIT_FAILURE);
+		file_error(site_filename);
 	}
 	
+	// Test data structures
 	cout << "Testing config_vars: " << endl;
 	for (auto& attribute : config_vars) {
 		cout << attribute.first << " = " << attribute.second << endl;
@@ -136,6 +137,18 @@ int main(int argc, char *argv[]) {
 	for (auto& attribute : sites) {
 		cout << attribute << endl;
 	}
+	
+	// Output file
+	string output_filename = "1.csv";
+	ofstream output (output_filename);
+	if (output.is_open()){
+		output << "Time,Phrase,Site,Count\n";
+		output << "03-12-17-01:10:05,Irish,http://www.nd.edu/,4\n";
+		output << "03-12-17-01:10:05,Notre,http://www.nd.edu/,10\n";
+		output.close();
+	} else {
+		file_error(output_filename);
+	}	
 	
 	exit(EXIT_SUCCESS);
 }

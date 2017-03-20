@@ -9,4 +9,5 @@ tool:	tool.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
-	rm -f $(PROGRAMS)
+	rm -f $(PROGRAMS) *.csv
+	rm -r *.dSYM
