@@ -11,6 +11,9 @@
 #include <vector>		// for split
 #include <iterator>		// for split
 
+#include "SearchFile.h"
+#include "SitesFile.h"
+
 using namespace std;
 
 // Utility Functions --------------------------
@@ -98,45 +101,17 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
-	// Parse search file 
-	vector<string> queries;
-	string search_filename = config_vars["SEARCH_FILE"];
-	ifstream search (search_filename);
-	if (search.is_open()){
-		while (getline(search,line)){
-			queries.push_back(line);
-		}
-		search.close();
-	} else {
-		file_error(search_filename);
-	}
-	
-	// Parse site file 
-	vector<string> sites;
-	string site_filename = config_vars["SITE_FILE"];
-	ifstream site (site_filename);
-	if (site.is_open()){
-		while (getline(site,line)){
-			sites.push_back(line);
-		}
-		site.close();
-	} else {
-		file_error(site_filename);
-	}
-	
-	// Test data structures
-	cout << "Testing config_vars: " << endl;
+	// Display the configuration
+	cout << "configuration: " << endl;
 	for (auto& attribute : config_vars) {
-		cout << attribute.first << " = " << attribute.second << endl;
+		cout << attribute.first << "=" << attribute.second << endl;
 	}
-	cout << "Testing queries: " << endl;
-	for (auto& attribute : queries) {
-		cout << attribute << endl;
-	}
-	cout << "Testing sites: " << endl;
-	for (auto& attribute : sites) {
-		cout << attribute << endl;
-	}
+	
+	SearchFile search(config_vars["SEARCH_FILE"]);
+	search.display();
+	
+	SitesFile site(config_vars["SITE_FILE"]);
+	site.display();
 	
 	// Output file
 	string output_filename = "1.csv";
