@@ -9,7 +9,10 @@
 #include <fstream>		// for ofstream
 #include <string>		// for string
 #include <sstream>		// for sstream / split
-#include <thread>
+#include <thread>		// for thread
+#include <csignal>		// for signal
+#include <unistd.h>		// for alarm
+#include <queue>			// for parse_queue
 
 #include "SearchFile.h"
 #include "SitesFile.h"
@@ -30,6 +33,16 @@ void file_error(string filename){
 	cout << "Error: Unable to open file "
 		<< filename << "." << endl;
 	exit(EXIT_FAILURE);
+}
+
+queue<string> parse_queue;
+
+volatile sig_atomic_t print_flag = false;
+
+void handle_alarm(int sig) {
+	print_flag = true;
+	alarm(12);
+	signal(SIGALRM, handle_alarm);
 }
 
 // Thread Args --------------------------------
@@ -56,47 +69,70 @@ int main(int argc, char *argv[]) {
 	// Display the configuration
 	config.display();
 	
-	// Fetching Threads ----------------------
-	int fetch = stoi(config.getValue("NUM_FETCH"));
-		
-	while (sites.more_urls){
-		pthread_t* fetch_thread = new pthread_t[fetch];
-		myarg_t* fetch_args = new myarg_t[fetch];
-		
-		// Initialize arguments for each args struct
-		for (int i=0; i<fetch; i++){
-			fetch_args[i].url = sites.top();
-		}
-		
-		// Create threads
-		for (int i=0; i<fetch; i++){
-			if (pthread_create(&(fetch_thread[i]), NULL, fetch_url, (void *) (fetch_args+i))) {
-				cout << "Error creating thread " << i << endl;
-				exit(EXIT_FAILURE);
-			}
-		}
-		
-		// Join Threads
-		for (int i=0; i<fetch; i++){
-			if (pthread_join(fetch_thread[i], NULL)){
-				cout << "Error joining thread " << i << endl;
-				exit(EXIT_FAILURE);
-			}
-		}
-	}
+	// Initialize alarm
+	int period = stoi(config.getValue("PERIOD_FETCH"));
 	
-	free(fetch_thread);
-	free(fetch_args);
+	// Every 180 seconds...
+	signal(SIGALRM, handle_alarm);
+	alarm(period);
 	
-	// Parsing Threads -----------------------
-	//int parse = stoi(config.getValue("NUM_PARSE"));
-	//
-	//
-	//
-	//
-	//
-	//
-	//
+//	while(true){
+		cout << "|-------------------|" << endl;
+		cout << "|  NEW 180 SECONDS  |" << endl;
+		cout << "|-------------------|" << endl;
+
+		if (print_flag) {
+			cout << "Hello" << endl;
+			print_flag = false;
+			alarm(period);
+		}
+		
+		// Fetching Threads ----------------------
+		int fetch = stoi(config.getValue("NUM_FETCH"));
+		
+		while (sites.more_urls){
+			cout << "	IN WHILE LOOP" << endl;
+			
+			pthread_t* fetch_thread = new pthread_t[fetch];
+			myarg_t* fetch_args = new myarg_t[fetch];
+			
+			// Create threads
+			for (int i=0; i<fetch; i++){
+				fetch_args[i].url = sites.top();
+				cout << "		Creating fetch thread: " << fetch_args[i].url << endl;
+				if (pthread_create(&(fetch_thread[i]), NULL, fetch_url, (void *) (fetch_args+i))) {
+					cout << "Error creating thread " << i << endl;
+					exit(EXIT_FAILURE);
+				}
+			}
+			
+			// Join Threads
+			for (int i=0; i<fetch; i++){
+				if (pthread_join(fetch_thread[i], NULL)){
+					cout << "Error joining thread " << i << endl;
+					exit(EXIT_FAILURE);
+				}
+				parse_queue.push(fetch_args[i].html);
+			}
+			
+			delete[] fetch_thread;
+			delete[] fetch_args;
+			cout << "	FINISHED LOOP" << endl;
+		}
+		
+		cout << parse_queue.front() << endl;
+		parse_queue.pop();
+		cout << parse_queue.front() << endl;
+		// Parsing Threads -----------------------
+		//int parse = stoi(config.getValue("NUM_PARSE"));
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+//	}
 	
 	// Output file
 	string output_filename = "1.csv";
@@ -114,6 +150,18 @@ int main(int argc, char *argv[]) {
 }
 
 void *fetch_url( void *args ){
+	
+	// while (gKeepRunning)
+	//	lock mutex
+	//	while (fQueue.getCount()==0)
+	//	pthread_cond_wait(mutex, cond_var)
+	// 	pop the first item from the queue
+	// 	unlock fqueue mutex
+	// 	CURL
+	// 	lock parse queue
+	// 	put data/work item in parse queue
+	// 	signal or bcast for cond_var
+	// 	unlock parse queue
 	
 	myarg_t *m  = (myarg_t*) args;
 	
