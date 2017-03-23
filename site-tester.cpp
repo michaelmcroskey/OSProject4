@@ -12,21 +12,16 @@
 #include <sstream>		// for sstream / split
 #include <thread>		// for thread
 #include <csignal>		// for signal
-#include <unistd.h>		// for alarm
-#include <queue>			// for parse_queue
+#include <queue>			// for queue
 #include <mutex>			// for mutex
-#include <chrono>
-#include <condition_variable>
+#include <ctime>			// for time
+#include <unistd.h>		// for sleep
+#include <condition_variable> // condition_variable
 
-#include "SearchFile.h"
-#include "SitesFile.h"
 #include "ConfigFile.h"
 #include "LibCurl.h"
-#include "Parse.h"
 
 using namespace std;
-
-void *fetch_url( void *args );
 
 // Utility Functions --------------------------
 void usage(int status) {
@@ -40,44 +35,60 @@ void file_error(string filename){
 	exit(EXIT_FAILURE);
 }
 
-//void fetch_and_parse(SearchFile *search, SitesFile *sites, int period, int fetch, int parse);
+string current_time(){
+	time_t currentTime;
+	struct tm *localTime;
+
+	time( &currentTime );                   // Get the current time
+	localTime = localtime( &currentTime );  // Convert the current time to the local time
+
+	int Day    = localTime->tm_mday;
+	int Month  = localTime->tm_mon + 1;
+	int Year   = localTime->tm_year + 1900;
+	int Hour   = localTime->tm_hour;
+	int Min    = localTime->tm_min;
+	int Sec    = localTime->tm_sec;
+
+	string date = to_string(Month) + "-" + to_string(Day) + "-" + to_string(Year) + " " + to_string(Hour) + ":" + to_string(Min) + ":" + to_string(Sec);
+	return date;
+}
 
 void handle_exit(int sig) {
 	exit(EXIT_SUCCESS);
 }
 
-// Thread Args --------------------------------
-
-typedef struct __myarg_t {
-	string url;
-	string html;
-} myarg_t;
-
 // Mutex and stuff ----------------------------
-
-bool keepLooping = true;
 
 queue<string> fetch_queue;
 mutex fetch_queue_mutex;
 condition_variable fetch_cv;
 
-queue<string> parse_queue;
+queue<pair<string,string>> parse_queue;
 mutex parse_queue_mutex;
 condition_variable parse_cv;
 
-//void go(SitesFile *sites) {
-//	unique_lock<mutex> lck(urls_mutex);
-//	more_urls = sites->are_more_urls();
-//	cv.notify_all();
-//}
+vector< vector<string> > results;
+
+void stop_fetching() {
+	sleep(15);
+	fetch_cv.notify_all();
+}
+
+void stop_parsing() {
+	sleep(15);
+	parse_cv.notify_all();
+}
 
 void _fetch(int id) {
-	while(keepLooping){
+	// Keep looping until all urls are processed
+	while(1){
 		unique_lock<mutex> flck(fetch_queue_mutex);
-			while (fetch_queue.size()==0)
+			while (fetch_queue.size()==0){
 				fetch_cv.wait(flck);
+				return;
+			}
 			string site_url = fetch_queue.front();
-			cout << "popping " << site_url << endl; 
+			cout << "Thread " << id << ": pop " << site_url << endl; 
 			fetch_queue.pop();
 			fetch_cv.notify_all();
 		flck.unlock();
@@ -85,19 +96,63 @@ void _fetch(int id) {
 		LibCurl url (site_url);
 		
 		unique_lock<mutex> plck(parse_queue_mutex);
-			parse_queue.push(url.getString());
+			parse_queue.push(pair<string,string>(site_url,url.getString()));
 			parse_cv.notify_all();
 		plck.unlock();
 	}
 }
 
-//void _parse(int id) {
-//	while (!more_urls)
-//		this_thread::yield();
-//		
-//	for (volatile int i=0; i<1000000; ++i) {}
-//	cout << id << endl;
-//}
+void _parse(int id, vector<pair<string, int> > queries) {
+	while(1){
+		unique_lock<mutex> plck(parse_queue_mutex);
+			while (parse_queue.size()==0){
+				parse_cv.wait(plck);
+				return;
+			}
+			string url = parse_queue.front().first;
+			string page = parse_queue.front().second;
+			parse_queue.pop();
+			cout << "THREAD " << id << ": [PARSING " << url << "]" << endl;
+			parse_cv.notify_all();
+		plck.unlock();
+		
+		for (auto& query : queries){
+			int count = 0;
+			size_t pos = page.find(query.first, 0); // fist occurrence
+			while(pos != string::npos){
+				count++;
+				pos = page.find(query.first, pos+1);
+			}
+			query.second = count;
+			vector<string> result_line = {current_time(), query.first, url, std::to_string(query.second)};
+			results.push_back(result_line);
+		}
+	}
+}
+
+void output_to_file(string output_filename){
+	// Output file
+	ofstream output (output_filename);
+	if (output.is_open()){
+		output << "Time,Phrase,Site,Count\n";
+		for (auto line : results){
+			bool first = true;
+			for (auto element : line){
+				if (first){
+					output << element;
+					first = false;
+				} else {
+					output << "," << element;
+				}
+			}
+			output << "\n";
+		}
+		output.close();
+	} else {
+		file_error(output_filename);
+	}
+}
+
 
 // Main Execution  ----------------------------
 int main(int argc, char *argv[]) {
@@ -110,35 +165,32 @@ int main(int argc, char *argv[]) {
 	if (argc != 2)
 		usage(EXIT_FAILURE);
 	
-	// Parse config, search, and sites files
+	// Parse config file
 	ConfigFile config (argv[1]);
-	//SitesFile sites (config.getValue("SITE_FILE"));
-	//SearchFile search (config.getValue("SEARCH_FILE"));
 	
 	// Initialize period, # fetch and parse threads
 	int period = stoi(config.getValue("PERIOD_FETCH"));
 	int fetch = stoi(config.getValue("NUM_FETCH"));
 	int parse = stoi(config.getValue("NUM_PARSE"));
 	
-//	parse_queue.push("http://www.google.com/");
-//	parse_queue.push("http://www.yahoo.com/");
-//	parse_queue.push("http://www.amazon.com/");
-//	parse_queue.push("http://www.bing.com/");
-//	parse_queue.push("http://www.ebay.com/");
-	
 	// Display the configuration
 	config.display();
 	
+	int num = 1;
 	while(1){
 		
-		cout << "|   10 seconds   |" << endl;
+		cout << "|   " << period << " seconds   |" << endl;
 		
+		// Generate fetch_queue  ----------------------------
 		string line, sites_filename = config.getValue("SITE_FILE");
 		ifstream sites (sites_filename);
 		if (sites.is_open()){
+			unique_lock<mutex> flck(fetch_queue_mutex);
 			while (getline(sites,line)){
+				cout << "Thread main: " << "push " << line << endl;
 				fetch_queue.push(line);
 			}
+			flck.unlock();
 			sites.close();
 		} else {
 			cout << "Error: Unable to open file "
@@ -150,89 +202,43 @@ int main(int argc, char *argv[]) {
 		thread* fetch_threads = new thread[fetch];
 		for (int i=0; i<fetch; ++i)
 			fetch_threads[i] = thread(_fetch, i);
+			
+		stop_fetching(); // use condition variable to stop fetching
 					
 		for (int i=0; i<fetch; ++i) fetch_threads[i].join();
-		
+		std::cout << "[All fetch threads joined!]" << endl;
 		delete[] fetch_threads;
 		
+		// Create list of search terms  ----------------------
+		vector<pair<string,int> > queries;
+		string search_filename = config.getValue("SEARCH_FILE");
+		ifstream search (search_filename);
+		if (search.is_open()){
+			while (getline(search,line)){
+				queries.push_back(pair<string,int>(line,0));
+			}
+			search.close();
+		} else {
+			cout << "Error: Unable to open file "
+				<< search_filename << "." << endl;
+			exit(EXIT_FAILURE);
+		}
+		
 		// Create parse threads  ----------------------------
-//		thread* parse_threads = new thread[parse];
-//		for (int i=0; i<parse; ++i)
-//			parse_threads[i] = thread(_parse,i);
-//			
-//		for (int i=0; i<parse; ++i) parse_threads[i].join();
-//		
-//		delete[] parse_threads;
+		thread* parse_threads = new thread[parse];
+		for (int i=0; i<parse; ++i)
+			parse_threads[i] = thread(_parse, i, queries);
+		
+		stop_parsing(); // use condition variable to stop parsing
+			
+		for (int i=0; i<parse; ++i) parse_threads[i].join();
+		std::cout << "[All parse threads joined!]" << endl;
+		delete[] parse_threads;
+		
+		output_to_file(to_string(num++) + ".csv");
 		
 		this_thread::sleep_for(chrono::seconds(period));
 	}
 	
-	
-	// Output file
-	string output_filename = "1.csv";
-	ofstream output (output_filename);
-	if (output.is_open()){
-		output << "Time,Phrase,Site,Count\n";
-		output << "03-12-17-01:10:05,Irish,http://www.nd.edu/,4\n";
-		output << "03-12-17-01:10:05,Notre,http://www.nd.edu/,10\n";
-		output.close();
-	} else {
-		file_error(output_filename);
-	}	
-	
 	exit(EXIT_SUCCESS);
 }
-
-
-// while (gKeepRunning)
-//	lock fqueue mutex
-//		while (fQueue.getCount()==0)
-//			pthread_cond_wait(mutex, cond_var)
-// 		pop the first item from the queue
-// 	unlock fqueue mutex
-// 	CURL
-// 	lock parse queue
-// 		put data/work item in parse queue
-// 		signal or bcast for cond_var
-// 	unlock parse queue
-
-//void *fetch_url( void *args ){
-//	
-//	myarg_t *m  = (myarg_t*) args;
-//	
-//	while(1){
-//		while(!sites->are_more_urls())
-//			pthread_cond_wait(this_thread, );
-//		
-//		m->url = sites.top();
-//		LibCurl url (m->url);
-//		m->html = url.getString();
-//		
-//		Parse parse;
-//		parse.push(m->html);
-//		pthread_cond_broadcast();
-//		
-//		parse.display();
-//		
-//		this_thread::sleep_for(period);
-//	}
-//	
-//	pthread_exit(NULL);
-//}
-
-//void fetch_and_parse(SearchFile *search, SitesFile *sites, int period, int fetch, int parse){
-//	cout << "|-------------------|" << endl;
-//	cout << "|  NEW 10 SECONDS   |" << endl;
-//	cout << "|-------------------|" << endl;
-//
-//	// reset queue here
-//	
-////	cout << endl;
-////	cout << parse_queue.front().substr(0,100) << endl;
-////	parse_queue.pop();
-////	cout << endl;
-////	cout << parse_queue.front().substr(0,100) << endl;
-//	
-//	// Parsing Threads -----------------------
-//	//int parse = stoi(config.getValue("NUM_PARSE"));
-//}
