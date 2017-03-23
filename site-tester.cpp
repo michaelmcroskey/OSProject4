@@ -1,5 +1,6 @@
 // NOTE: BEFORE SUBMITTING MAKE SURE TO CHANGE COMPILER TO /usr/bin/g++
 // -static-libstdc++
+// Test on student machines
 
 // OS Project 4
 // 
@@ -88,7 +89,7 @@ void _fetch(int id) {
 				return;
 			}
 			string site_url = fetch_queue.front();
-			cout << "Thread " << id << ": pop " << site_url << endl; 
+			cout << "Thread " << id << ":\tfetch_pop \t" << site_url << endl; 
 			fetch_queue.pop();
 			fetch_cv.notify_all();
 		flck.unlock();
@@ -96,6 +97,7 @@ void _fetch(int id) {
 		LibCurl url (site_url);
 		
 		unique_lock<mutex> plck(parse_queue_mutex);
+			cout << "Thread " << id << ":\tparse_push\t" << site_url << endl;
 			parse_queue.push(pair<string,string>(site_url,url.getString()));
 			parse_cv.notify_all();
 		plck.unlock();
@@ -112,7 +114,7 @@ void _parse(int id, vector<pair<string, int> > queries) {
 			string url = parse_queue.front().first;
 			string page = parse_queue.front().second;
 			parse_queue.pop();
-			cout << "THREAD " << id << ": [PARSING " << url << "]" << endl;
+			cout << "Thread " << id << ":\tparse_pop \t" << url << endl;
 			parse_cv.notify_all();
 		plck.unlock();
 		
@@ -151,8 +153,16 @@ void output_to_file(string output_filename){
 	} else {
 		file_error(output_filename);
 	}
+	cout << "[Outputting to file " << output_filename << "]" << endl;
 }
 
+bool no_files(ConfigFile *config){
+	ifstream search (config->getValue("SEARCH_FILE"));
+	if (!search.is_open()) return true;
+	ifstream sites (config->getValue("SITE_FILE"));
+	if (!sites.is_open()) return true;
+	return false;
+}
 
 // Main Execution  ----------------------------
 int main(int argc, char *argv[]) {
@@ -173,13 +183,18 @@ int main(int argc, char *argv[]) {
 	int fetch = stoi(config.getValue("NUM_FETCH"));
 	int parse = stoi(config.getValue("NUM_PARSE"));
 	
+	if (fetch < 0 || parse < 0 || no_files(&config)){
+		cout << "Invalid configuration parameters. Check config file." << endl;
+		exit(EXIT_FAILURE);
+	}
+	
 	// Display the configuration
 	config.display();
+	cout << endl;
 	
 	int num = 1;
-	while(1){
-		
-		cout << "|   " << period << " seconds   |" << endl;
+	while(1){	
+		cout << "FETCH/PARSE #" << num << " -------------------------" << endl;
 		
 		// Generate fetch_queue  ----------------------------
 		string line, sites_filename = config.getValue("SITE_FILE");
@@ -187,7 +202,7 @@ int main(int argc, char *argv[]) {
 		if (sites.is_open()){
 			unique_lock<mutex> flck(fetch_queue_mutex);
 			while (getline(sites,line)){
-				cout << "Thread main: " << "push " << line << endl;
+				cout << "Thread m: " << "\tfetch_push\t" << line << endl;
 				fetch_queue.push(line);
 			}
 			flck.unlock();
@@ -198,6 +213,7 @@ int main(int argc, char *argv[]) {
 			exit(EXIT_FAILURE);
 		}
 		
+		std::cout << "[Beginning fetch threads]" << endl;
 		// Create fetch threads  ----------------------------
 		thread* fetch_threads = new thread[fetch];
 		for (int i=0; i<fetch; ++i)
@@ -206,7 +222,7 @@ int main(int argc, char *argv[]) {
 		stop_fetching(); // use condition variable to stop fetching
 					
 		for (int i=0; i<fetch; ++i) fetch_threads[i].join();
-		std::cout << "[All fetch threads joined!]" << endl;
+		cout << "[All fetch threads joined]" << endl;
 		delete[] fetch_threads;
 		
 		// Create list of search terms  ----------------------
@@ -224,6 +240,7 @@ int main(int argc, char *argv[]) {
 			exit(EXIT_FAILURE);
 		}
 		
+		std::cout << "[Beginning parse threads]" << endl;
 		// Create parse threads  ----------------------------
 		thread* parse_threads = new thread[parse];
 		for (int i=0; i<parse; ++i)
@@ -232,7 +249,7 @@ int main(int argc, char *argv[]) {
 		stop_parsing(); // use condition variable to stop parsing
 			
 		for (int i=0; i<parse; ++i) parse_threads[i].join();
-		std::cout << "[All parse threads joined!]" << endl;
+		cout << "[All parse threads joined]" << endl;
 		delete[] parse_threads;
 		
 		output_to_file(to_string(num++) + ".csv");
