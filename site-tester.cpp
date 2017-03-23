@@ -1,5 +1,5 @@
 // NOTE: BEFORE SUBMITTING MAKE SURE TO CHANGE COMPILER TO /usr/bin/g++
-// also one more flag?
+// -static-libstdc++
 
 // OS Project 4
 // 
@@ -14,6 +14,9 @@
 #include <csignal>		// for signal
 #include <unistd.h>		// for alarm
 #include <queue>			// for parse_queue
+#include <mutex>			// for mutex
+#include <chrono>
+#include <condition_variable>
 
 #include "SearchFile.h"
 #include "SitesFile.h"
@@ -52,31 +55,49 @@ typedef struct __myarg_t {
 
 // Mutex and stuff ----------------------------
 
-std::mutex mtx;
-std::condition_variable cv;
-bool ready = false;
+bool keepLooping = true;
+
+queue<string> fetch_queue;
+mutex fetch_queue_mutex;
+condition_variable fetch_cv;
+
+queue<string> parse_queue;
+mutex parse_queue_mutex;
+condition_variable parse_cv;
+
+//void go(SitesFile *sites) {
+//	unique_lock<mutex> lck(urls_mutex);
+//	more_urls = sites->are_more_urls();
+//	cv.notify_all();
+//}
 
 void _fetch(int id) {
-	while (!ready) {             // wait until main() sets ready...
-		std::this_thread::yield();
+	while(keepLooping){
+		unique_lock<mutex> flck(fetch_queue_mutex);
+			while (fetch_queue.size()==0)
+				fetch_cv.wait(flck);
+			string site_url = fetch_queue.front();
+			cout << "popping " << site_url << endl; 
+			fetch_queue.pop();
+			fetch_cv.notify_all();
+		flck.unlock();
+		
+		LibCurl url (site_url);
+		
+		unique_lock<mutex> plck(parse_queue_mutex);
+			parse_queue.push(url.getString());
+			parse_cv.notify_all();
+		plck.unlock();
 	}
-	for (volatile int i=0; i<1000000; ++i) {}
-	std::cout << id;
 }
 
-void _parse(int id) {
-	while (!ready) {             // wait until main() sets ready...
-		std::this_thread::yield();
-	}
-	for (volatile int i=0; i<1000000; ++i) {}
-	std::cout << id;
-}
-
-void go() {
-	std::unique_lock<std::mutex> lck(mtx);
-	ready = true;
-	cv.notify_all();
-}
+//void _parse(int id) {
+//	while (!more_urls)
+//		this_thread::yield();
+//		
+//	for (volatile int i=0; i<1000000; ++i) {}
+//	cout << id << endl;
+//}
 
 // Main Execution  ----------------------------
 int main(int argc, char *argv[]) {
@@ -91,56 +112,61 @@ int main(int argc, char *argv[]) {
 	
 	// Parse config, search, and sites files
 	ConfigFile config (argv[1]);
-	SitesFile sites (config.getValue("SITE_FILE"));
-	SearchFile search (config.getValue("SEARCH_FILE"));
+	//SitesFile sites (config.getValue("SITE_FILE"));
+	//SearchFile search (config.getValue("SEARCH_FILE"));
 	
 	// Initialize period, # fetch and parse threads
 	int period = stoi(config.getValue("PERIOD_FETCH"));
 	int fetch = stoi(config.getValue("NUM_FETCH"));
 	int parse = stoi(config.getValue("NUM_PARSE"));
 	
+//	parse_queue.push("http://www.google.com/");
+//	parse_queue.push("http://www.yahoo.com/");
+//	parse_queue.push("http://www.amazon.com/");
+//	parse_queue.push("http://www.bing.com/");
+//	parse_queue.push("http://www.ebay.com/");
+	
 	// Display the configuration
 	config.display();
 	
-	// Create fetch threads --------------------
-	thread* fetch_threads = new thread[fetch];
-	for (int i=0; i<fetch; ++i)
-		fetch_threads[i] = thread(_fetch,i);
+	while(1){
 		
-	go();
-	
-	for (int i=0; i<fetch; ++i) fetch_threads[i].join();
-	
-	delete[] fetch_threads;
-	
-	// Create parse threads --------------------
-	thread* parse_threads = new thread[parse];
-	for (int i=0; i<parse; ++i)
-		parse_threads[i] = thread(_parse,i);
+		cout << "|   10 seconds   |" << endl;
 		
-	for (int i=0; i<parse; ++i) parse_threads[i].join();
-	
-	delete[] parse_threads;
-//	
-//	pthread_t* fetch_thread = new pthread_t[fetch];
-//	myarg_t* fetch_args = new myarg_t[fetch];
-//	
-//	for (int i=0; i<fetch; i++){
-//		if (pthread_create(&(fetch_thread[i]), NULL, fetch_url, (void *) (fetch_args+i))) {
-//			cout << "Error creating thread " << i << endl;
-//			exit(EXIT_FAILURE);
-//		}
-//	}
-//	
-//	for (int i=0; i<fetch; i++){
-//		if (pthread_join(fetch_thread[i], NULL)){
-//			cout << "Error joining thread " << i << endl;
-//			exit(EXIT_FAILURE);
-//		}
-//	}
+		string line, sites_filename = config.getValue("SITE_FILE");
+		ifstream sites (sites_filename);
+		if (sites.is_open()){
+			while (getline(sites,line)){
+				fetch_queue.push(line);
+			}
+			sites.close();
+		} else {
+			cout << "Error: Unable to open file "
+				<< sites_filename << "." << endl;
+			exit(EXIT_FAILURE);
+		}
+		
+		// Create fetch threads  ----------------------------
+		thread* fetch_threads = new thread[fetch];
+		for (int i=0; i<fetch; ++i)
+			fetch_threads[i] = thread(_fetch, i);
+					
+		for (int i=0; i<fetch; ++i) fetch_threads[i].join();
+		
+		delete[] fetch_threads;
+		
+		// Create parse threads  ----------------------------
+//		thread* parse_threads = new thread[parse];
+//		for (int i=0; i<parse; ++i)
+//			parse_threads[i] = thread(_parse,i);
+//			
+//		for (int i=0; i<parse; ++i) parse_threads[i].join();
 //		
-//	delete[] fetch_thread;
-//	delete[] fetch_args;
+//		delete[] parse_threads;
+		
+		this_thread::sleep_for(chrono::seconds(period));
+	}
+	
 	
 	// Output file
 	string output_filename = "1.csv";
@@ -156,6 +182,19 @@ int main(int argc, char *argv[]) {
 	
 	exit(EXIT_SUCCESS);
 }
+
+
+// while (gKeepRunning)
+//	lock fqueue mutex
+//		while (fQueue.getCount()==0)
+//			pthread_cond_wait(mutex, cond_var)
+// 		pop the first item from the queue
+// 	unlock fqueue mutex
+// 	CURL
+// 	lock parse queue
+// 		put data/work item in parse queue
+// 		signal or bcast for cond_var
+// 	unlock parse queue
 
 //void *fetch_url( void *args ){
 //	
@@ -197,16 +236,3 @@ int main(int argc, char *argv[]) {
 //	// Parsing Threads -----------------------
 //	//int parse = stoi(config.getValue("NUM_PARSE"));
 //}
-
-
-// while (gKeepRunning)
-//	lock fqueue mutex
-//		while (fQueue.getCount()==0)
-//			pthread_cond_wait(mutex, cond_var)
-// 			pop the first item from the queue
-// 	unlock fqueue mutex
-// 	CURL
-// 	lock parse queue
-// 		put data/work item in parse queue
-// 		signal or bcast for cond_var
-// 	unlock parse queue
