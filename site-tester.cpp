@@ -1,7 +1,3 @@
-// NOTE: BEFORE SUBMITTING MAKE SURE TO CHANGE COMPILER TO /usr/bin/g++
-// -static-libstdc++
-// Test on student machines
-
 // OS Project 4
 // 
 // Michael McRoskey
@@ -19,12 +15,12 @@
 #include <unistd.h>		// for sleep
 #include <condition_variable> // condition_variable
 
-#include "ConfigFile.h"
-#include "LibCurl.h"
+#include "ConfigFile.h"	// for config
+#include "LibCurl.h"		// for url
 
 using namespace std;
 
-// Utility Functions --------------------------
+// Global variables ---------------------------
 queue<string> fetch_queue;
 mutex fetch_queue_mutex;
 condition_variable fetch_cv;
@@ -55,6 +51,7 @@ void file_error(string filename){
 	exit(EXIT_FAILURE);
 }
 
+// returns current time as string
 string current_time(){
 	time_t currentTime;
 	struct tm *localTime;
@@ -73,6 +70,16 @@ string current_time(){
 	return date;
 }
 
+// returns if files specified in config file exist
+bool no_files(ConfigFile *config){
+	ifstream search (config->getValue("SEARCH_FILE"));
+	if (!search.is_open()) return true;
+	ifstream sites (config->getValue("SITE_FILE"));
+	if (!sites.is_open()) return true;
+	return false;
+}
+
+// gracefully handle CRTL-C or SIGHUP
 void handle_exit(int sig) {
 	while(outputting) ;
 	keep_looping = false;
@@ -83,7 +90,7 @@ void handle_exit(int sig) {
 	exit(EXIT_SUCCESS);
 }
 
-// Mutex and stuff ----------------------------
+// Mutex functions ----------------------------
 
 void stop_fetching() {
 	sleep(15);
@@ -95,6 +102,8 @@ void stop_parsing() {
 	parse_cv.notify_all();
 }
 
+// fetch threads enter and fetch websites and
+// output html into parse_queue
 void _fetch(int id) {
 	// Keep looping until all urls are processed
 	while(keep_looping){
@@ -119,6 +128,8 @@ void _fetch(int id) {
 	}
 }
 
+// parse threads enter and pop from parse_queue and 
+// perform a word count
 void _parse(int id, vector<pair<string, int> > queries) {
 	while(keep_looping){
 		unique_lock<mutex> plck(parse_queue_mutex);
@@ -147,6 +158,7 @@ void _parse(int id, vector<pair<string, int> > queries) {
 	}
 }
 
+// outputs data from parse() function to csv files
 void output_to_file(string output_filename){
 	outputting = true;
 	// Output file
@@ -174,14 +186,6 @@ void output_to_file(string output_filename){
 	outputting = false;
 }
 
-bool no_files(ConfigFile *config){
-	ifstream search (config->getValue("SEARCH_FILE"));
-	if (!search.is_open()) return true;
-	ifstream sites (config->getValue("SITE_FILE"));
-	if (!sites.is_open()) return true;
-	return false;
-}
-
 // Main Execution  ----------------------------
 int main(int argc, char *argv[]) {
 	
@@ -201,6 +205,7 @@ int main(int argc, char *argv[]) {
 	int fetch = stoi(config.getValue("NUM_FETCH"));
 	int parse = stoi(config.getValue("NUM_PARSE"));
 	
+	// Error checking for invalid parameters
 	if (fetch<0 || parse<0 || fetch>8 || parse>8 || no_files(&config)){
 		cout << "Invalid configuration parameters. Check config file." << endl << endl;
 		usage(EXIT_FAILURE);
@@ -212,7 +217,7 @@ int main(int argc, char *argv[]) {
 	
 	int num = 1;
 	while(1){	
-		cout << "FETCH/PARSE #" << num << " -------------------------" << endl;
+		cout << "FETCH/PARSE #" << num << " --------------------------------------------" << endl;
 		
 		// Generate fetch_queue  ----------------------------
 		string line, sites_filename = config.getValue("SITE_FILE");
@@ -226,7 +231,7 @@ int main(int argc, char *argv[]) {
 			flck.unlock();
 			sites.close();
 		} else {
-			cout << "Error: Unable to open file "
+			cout << "Error: Unable to open file "	// I/O error checking
 				<< sites_filename << "." << endl;
 			exit(EXIT_FAILURE);
 		}
@@ -253,7 +258,7 @@ int main(int argc, char *argv[]) {
 			}
 			search.close();
 		} else {
-			cout << "Error: Unable to open file "
+			cout << "Error: Unable to open file "	// I/O error checking
 				<< search_filename << "." << endl;
 			exit(EXIT_FAILURE);
 		}
@@ -270,8 +275,10 @@ int main(int argc, char *argv[]) {
 		cout << "[All parse threads joined]" << endl;
 		delete[] parse_threads;
 		
+		// Output results of fetch/parse to file
 		output_to_file(to_string(num++) + ".csv");
 		
+		// Wait
 		this_thread::sleep_for(chrono::seconds(period));
 	}
 	

@@ -30,8 +30,8 @@ System should have a `g++` compiler installed at `/usr/bin/g++` and be able to c
 ## Usage
 1. Edit `Config.txt`, `Search.txt`, and/or `Sites.txt` accordingly to configure options for number of threads, fetch period, URLs to parse, and search terms. See File Requirements below.
 1. Run `$ make` to build the executables.
-2. Run `$ site-tester Config.txt` to begin fetching/parsing URLs.
-4. After the first period, `site-tester` will output `1.csv`, `2.csv`, and so on in the current directory. You can view the word counts for various sites
+2. Run `$ site-tester Config.txt` to begin fetching/parsing URLs. The program will display to stdout each thread's actions.
+4. After the first period, `site-tester` will output `1.csv`, `2.csv`, and so on in the current directory. You can view the word counts for various sites.
 5. To end the run, `CTRL-C` in the command line.
 5. Run `$ make clean` to delete `*.csv` files and executables.
 
@@ -128,8 +128,6 @@ The `fetch()` and `parse()` functions each make use of `unique_lock<mutex>` to l
 | Config error protection        | Yes (exceptions for I/O errors, default values, thread limits)          |
 | Single output file per fetch   | Yes (`1.csv`, `2.csv`, ...)                                             |
 | Thread variations work         | Yes (default # threads, works with 1-8 threads for parse/fetch threads) |
-| Multi-thread, multi-site, multi-search works   | Yes (tested with 5 sites, 5 search terms, 3 fetch threads, 2 parse threads |
+| Multi-thread, multi-site, multi-search works   | Yes (tested with 5 sites, 5 search terms, 3 fetch threads, 2 parse threads) |
 | Use of condition variables     | Yes (`fetch_cv` and `parse_cv`)                                         |
 | Use of threading               | Yes (used `<std::thread>`)                                              |
-
-
