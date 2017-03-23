@@ -123,7 +123,7 @@ The `fetch()` and `parse()` functions each make use of `unique_lock<mutex>` to l
 | Correct config parsing         | Yes (gives warning for unknown params, sets defaults)                   |
 | Single-site testing            | Passes                                                                  |
 | Multiple-site testing          | Passes                                                                  |
-| Error-prone site testing       | ??????                                                                  |
+| Error-prone site testing       | Yes (`FOLLOWLOCATION` and `TIMEOUT_MS` curl flags specified)            |
 | Graceful exit (SIGHUP/CTRL-C)  | Yes (will not exit while writing to file)                               |
 | Config error protection        | Yes (exceptions for I/O errors, default values, thread limits)          |
 | Single output file per fetch   | Yes (`1.csv`, `2.csv`, ...)                                             |
