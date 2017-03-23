@@ -2,26 +2,23 @@
 
 A project by [Michael McRoskey](http://michaelmcroskey.com/) (mmcrosk1) and [Maggie Thomann](http://maggiethomann.com/) (mthomann)
 
--------------------
-
 Project Overview
 --------
 
 - [Project Requirements](http://www3.nd.edu/~dthain/courses/cse30341/spring2017/project4/project4.html)
-Operating Systems Project 4 
 
-----
+Operating Systems Project 4 is an SEO-Optimization tool that tracks how often specified keywords appear on certain websites by constantly fetching and parsing those websites via [libcurl](https://curl.haxx.se/libcurl/). The project utilizes multi-threading, mutex locks, and conditional variables to ensure thread-safety with global resources such as boolean values and queues. A user will edit configuration files, specify the terms to search and URLs to access, and then run `site-tester` to constantly output processed word count data into CSV files.
+
 ## Files
 1. **`site-tester.cpp`**: Given a configuration file argument, it uses producer/consumer threads to fetch websites and parse fetched content to count the occurrences of defined queries in real time
 2. **`Makefile`**: Running the command `make` in this directory will properly compile `site-tester.cpp`
 3. **`ConfigFile.h`**: Loads in configuration parameters and sets defaults if necessary
 4. **`LibCurl.h`**: Grabs a webpage via [libcurl](https://curl.haxx.se/libcurl/) and stores into a C++ string
-5. **`Config.txt`**: Example configuration plain text file. Lists arguments for `site-tester` in the form PARAMETER=VALUE
+5. **`Config.txt`**: Example configuration plain text file. Lists arguments for `site-tester` in the form `PARAMETER=VALUE`
 6. **`Search.txt`**: Example search terms plain text file with each term on its own line
-7. **`Sites.txt`**: Example sites plain text file with each http:// url on its own line
+7. **`Sites.txt`**: Example sites plain text file with each `http://`-prefixed URL on its own line
 8. **`README.md`**: Describes how to build, run, and configure code
 
-----
 ## System Requirements
 System should have a `g++` compiler installed at `/usr/bin/g++` and be able to compile with the following flags:
 - `-g`
@@ -30,16 +27,14 @@ System should have a `g++` compiler installed at `/usr/bin/g++` and be able to c
 - `-lpthread` for threading
 - `-lcurl` for [libcurl](https://curl.haxx.se/libcurl/) library 
 
-----
 ## Usage
-1. Edit `Config.txt`, `Search.txt`, and/or `Sites.txt` accordingly to configure options for number of threads, fetch period, urls to parse, and search terms. See File Requirements below.
+1. Edit `Config.txt`, `Search.txt`, and/or `Sites.txt` accordingly to configure options for number of threads, fetch period, URLs to parse, and search terms. See File Requirements below.
 1. Run `$ make` to build the executables.
-2. Run `$ site-tester Config.txt` to begin fetching / parsing urls.
+2. Run `$ site-tester Config.txt` to begin fetching/parsing URLs.
 4. After the first period, `site-tester` will output `1.csv`, `2.csv`, and so on in the current directory. You can view the word counts for various sites
 5. To end the run, `CTRL-C` in the command line.
 5. Run `$ make clean` to delete `*.csv` files and executables.
 
-----
 ## File Requirements
 
 **`Config.txt`**
@@ -70,9 +65,55 @@ SITE_FILE=<string::sites_filename>
 <string::url_to_fetch_3>
 ```
 
----
 ## What's Going On
 
+Below is a pseudocode version of the `main()` function in `site-tester.cpp`
+
+```python
+int main() {
+	
+	catch_signals()
+	initialize_config_parameters()
+	config.display()
+	
+	num = 1
+	# Every period
+	while(1):
+		
+		fetch_queue.lock()
+		fetch_queue.push(urls[])
+		fetch_queue.unlock()
+		
+		# Fetch Threads
+		for thread in num_fetch_threads:
+			create_thread(fetch())
+			
+		stop_fetching(); # use condition variable to stop fetching
+					
+		for thread in num_fetch_threads:
+			join_thread()
+			
+		delete fetch_threads
+		
+		search_terms[] = load_search_terms()
+		
+		# Parse Threads
+		for thread in num_parse_threads:
+			create_thread(parse())
+			
+		stop_parsing(); # use condition variable to stop fetching
+					
+		for thread in num_parse_threads:
+			join_thread()
+			
+		delete parse_threads
+		
+		output_to_file(to_string(num++) + ".csv");
+		
+		sleep_this_thread(config.period);
+	}
+}
+```
 
 README file that describes how to build, run, and configure your code.
 
