@@ -25,8 +25,27 @@
 using namespace std;
 
 // Utility Functions --------------------------
+queue<string> fetch_queue;
+mutex fetch_queue_mutex;
+condition_variable fetch_cv;
+
+queue<pair<string,string>> parse_queue;
+mutex parse_queue_mutex;
+condition_variable parse_cv;
+
+bool outputting = false;
+bool keep_looping = true;
+vector< vector<string> > results;
+
+// Utility Functions --------------------------
 void usage(int status) {
-	cout << "usage: site-tester <filename>" << endl;
+	cout << "usage: site-tester <config_filename>" << endl;
+	cout << "config_filename parameters:" << endl;
+		cout << "\tPERIOD_FETCH=<int::period>" << endl;
+		cout << "\tNUM_FETCH=<int::number_of_fetch_threads>" << endl;
+		cout << "\tNUM_PARSE=<int::number_of_parse_threads>" << endl;
+		cout << "\tSEARCH_FILE=<string::search_terms_filename>" << endl;
+		cout << "\tSITE_FILE=<string::sites_filename>" << endl;
 	exit(status);
 }
 
@@ -55,20 +74,16 @@ string current_time(){
 }
 
 void handle_exit(int sig) {
+	while(outputting) ;
+	keep_looping = false;
+	fetch_cv.notify_all();
+	parse_cv.notify_all();
+	cout << endl;
+	cout << "Exiting" << endl;
 	exit(EXIT_SUCCESS);
 }
 
 // Mutex and stuff ----------------------------
-
-queue<string> fetch_queue;
-mutex fetch_queue_mutex;
-condition_variable fetch_cv;
-
-queue<pair<string,string>> parse_queue;
-mutex parse_queue_mutex;
-condition_variable parse_cv;
-
-vector< vector<string> > results;
 
 void stop_fetching() {
 	sleep(15);
@@ -82,7 +97,7 @@ void stop_parsing() {
 
 void _fetch(int id) {
 	// Keep looping until all urls are processed
-	while(1){
+	while(keep_looping){
 		unique_lock<mutex> flck(fetch_queue_mutex);
 			while (fetch_queue.size()==0){
 				fetch_cv.wait(flck);
@@ -105,7 +120,7 @@ void _fetch(int id) {
 }
 
 void _parse(int id, vector<pair<string, int> > queries) {
-	while(1){
+	while(keep_looping){
 		unique_lock<mutex> plck(parse_queue_mutex);
 			while (parse_queue.size()==0){
 				parse_cv.wait(plck);
@@ -133,6 +148,7 @@ void _parse(int id, vector<pair<string, int> > queries) {
 }
 
 void output_to_file(string output_filename){
+	outputting = true;
 	// Output file
 	ofstream output (output_filename);
 	if (output.is_open()){
@@ -154,6 +170,8 @@ void output_to_file(string output_filename){
 		file_error(output_filename);
 	}
 	cout << "[Outputting to file " << output_filename << "]" << endl;
+	results.clear();
+	outputting = false;
 }
 
 bool no_files(ConfigFile *config){
@@ -183,9 +201,9 @@ int main(int argc, char *argv[]) {
 	int fetch = stoi(config.getValue("NUM_FETCH"));
 	int parse = stoi(config.getValue("NUM_PARSE"));
 	
-	if (fetch < 0 || parse < 0 || no_files(&config)){
-		cout << "Invalid configuration parameters. Check config file." << endl;
-		exit(EXIT_FAILURE);
+	if (fetch<0 || parse<0 || fetch>8 || parse>8 || no_files(&config)){
+		cout << "Invalid configuration parameters. Check config file." << endl << endl;
+		usage(EXIT_FAILURE);
 	}
 	
 	// Display the configuration
