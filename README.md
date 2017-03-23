@@ -70,8 +70,8 @@ SITE_FILE=<string::sites_filename>
 Below is a pseudocode version of the `main()` function in `site-tester.cpp`
 
 ```python
-int main() {
-	
+int main():
+
 	catch_signals()
 	initialize_config_parameters()
 	config.display()
@@ -111,20 +111,25 @@ int main() {
 		output_to_file(to_string(num++) + ".csv");
 		
 		sleep_this_thread(config.period);
-	}
-}
 ```
 
-README file that describes how to build, run, and configure your code.
+The `fetch()` and `parse()` functions each make use of `unique_lock<mutex>` to lock and unlock queues and two `condition_variable` variables to alert the other theads when they can attempt to acquire the mutex again.
 
-A useful README file that describes how your system works and various parameters (5%)
-Good coding style, including clear formatting, sensible variable names, and useful comments. (10%)
-Correct parsing of various configuration parameters (10%)
-Correct parsing / counting when tested with single error-free site (15%)
-Correct parsing / counting when tested with multiple error-free sites (25%)
-Correct operation when sites have errors (timeouts) (5%)
-Correct exiting on SIGHUP or Control C (5%)
-Protection against various configuration errors (5%)
-Single output file per batch of fetches (5%)
-Variations on thread settings correctly impact operation (5%)
-Successful operation (multi-thread, multi-site, multi-search) over multiple batches of data (10%)
+**Rubric Qualifications**
+
+| Feature                        | Description                                                             |
+|--------------------------------|-------------------------------------------------------------------------|
+| Coding style/Formatting        | Good! (at least this README is well documented!)                        |
+| Correct config parsing         | Yes (gives warning for unknown params, sets defaults)                   |
+| Single-site testing            | Passes                                                                  |
+| Multiple-site testing          | Passes                                                                  |
+| Error-prone site testing       | ??????                                                                  |
+| Graceful exit (SIGHUP/CTRL-C)  | Yes (will not exit while writing to file)                               |
+| Config error protection        | Yes (exceptions for I/O errors, default values, thread limits)          |
+| Single output file per fetch   | Yes (`1.csv`, `2.csv`, ...)                                             |
+| Thread variations work         | Yes (default # threads, works with 1-8 threads for parse/fetch threads) |
+| Multi-thread, multi-site, multi-search works   | Yes (tested with 5 sites, 5 search terms, 3 fetch threads, 2 parse threads |
+| Use of condition variables     | Yes (`fetch_cv` and `parse_cv`)                                         |
+| Use of threading               | Yes (used `<std::thread>`)                                              |
+
+
