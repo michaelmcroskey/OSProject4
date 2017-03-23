@@ -15,11 +15,12 @@ class SitesFile {
 		void pop();
 		void display();
 		
-		bool more_urls;
+		bool are_more_urls();
 		
 	private:
 		queue<string> websites;
 		mutex m;
+		bool more_urls;
 };
 
 SitesFile::SitesFile(string sites_filename){
@@ -64,4 +65,9 @@ string SitesFile::top(void){
 void SitesFile::pop(void){
 	lock_guard<mutex> guard(m);
 	websites.pop();
+}
+
+bool SitesFile::are_more_urls(){
+	lock_guard<mutex> guard(m);
+	return more_urls;
 }

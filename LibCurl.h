@@ -28,6 +28,7 @@ LibCurl::LibCurl(string url){
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 		res = curl_easy_perform(curl);
 		curl_easy_cleanup(curl);
 
