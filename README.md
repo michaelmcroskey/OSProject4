@@ -20,13 +20,13 @@ Operating Systems Project 4 is an SEO-Optimization tool that tracks how often sp
 8. **`README.md`**: Describes how to build, run, and configure code
 9. **`EC1.txt`**: Extra credit description
 10. **`html/`**
-⋅⋅11. **`1.html`**: Webpage to view results of `1.csv`. Similarly, `n.html` where `n` is an integer will show the results of `n.csv`
-⋅⋅12. **`append.txt`**: file with minified html that gets appended to output to form `1.html`, `2.html`, etc.
-⋅⋅13. **`styles.css`**: CSS styles for html output
+  + **`1.html`**: Webpage to view results of `1.csv`. Similarly, `n.html` where *n* is an integer will show the results of `n.csv`
+  + **`append.txt`**: file with minified html that gets appended to output to form `1.html`, `2.html`, etc.
+  + **`styles.css`**: CSS styles for html output
 14. **`csv/`**
-⋅⋅13. **`1.csv`**: first CSV file -- all generated CSV files will go here
+  + **`1.csv`**: first CSV file -- all generated CSV files will go here
 16. **`images/`**
-⋅⋅17. **`ec_screenshot.png`**: screenshot of extra credit at [http://localhost:8000/html/1.html]()
+  + **`ec_screenshot.png`**: screenshot of extra credit at [http://localhost:8000/html/1.html]()
 
 <img src="images/ec_screenshot.png" width="500">
 
