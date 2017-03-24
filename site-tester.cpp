@@ -189,18 +189,26 @@ void output_to_file(string output_filename){
 // creates html file to compile data
 void output_to_html(string output_filename, string csv_filename){
 	outputting = true;
+	string rest_of_file;
 	
-	ofstream html_1 ("html_1");
-	if (output.is_open()){
+	ifstream append ("html/append.txt");
+	if (append.is_open()){
+		getline(append,rest_of_file);
+		append.close();
+	} else {
+		file_error("html/append.txt");
+	}
 	
 	// Output file
-	ofstream output ("html/" + output_filename);
+	ofstream output (output_filename);
 	if (output.is_open()){
-		output << "<html><body>";
+		output << "<!DOCTYPE html><script>var date=\"";
 		output << current_time();
-		output << "Hello world: ";
+		output << "\",file=\"../csv";
+		csv_filename.erase (0,3);
 		output << csv_filename;
-		output << "</body></html>";
+		output << "\"</script>";
+		output << rest_of_file;
 		output.close();
 	} else {
 		file_error(output_filename);
@@ -299,9 +307,9 @@ int main(int argc, char *argv[]) {
 		delete[] parse_threads;
 		
 		// Output results of fetch/parse to file
-		string output_csv = to_string(num) + ".csv";
+		string output_csv = "csv/" + to_string(num) + ".csv";
 		output_to_file(output_csv);
-		output_to_html(to_string(num) + ".html", output_csv);
+		output_to_html("html/" + to_string(num) + ".html", output_csv);
 		
 		// Wait
 		this_thread::sleep_for(chrono::seconds(period));
