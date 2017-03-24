@@ -1,4 +1,5 @@
 # Operating Systems Project 4
+[![Build Status](images/passing.svg)]()
 
 A project by [Michael McRoskey](http://michaelmcroskey.com/) (mmcrosk1) and [Maggie Thomann](http://maggiethomann.com/) (mthomann)
 
