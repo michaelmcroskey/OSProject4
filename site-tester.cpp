@@ -311,6 +311,7 @@ int main(int argc, char *argv[]) {
 		output_to_file(output_csv);
 		output_to_html("html/" + to_string(num) + ".html", output_csv);
 		
+		num++;
 		// Wait
 		this_thread::sleep_for(chrono::seconds(period));
 	}
