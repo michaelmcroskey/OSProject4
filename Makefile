@@ -1,5 +1,5 @@
 CXX=		g++
-CXXFLAGS=	-g -Wall -std=c++11 -lpthread -lcurl -static-libstdc++
+CXXFLAGS=	-lcurl -g -Wall -std=c++11 -lpthread -static-libstdc++
 SHELL=		bash
 PROGRAMS=	site-tester
 CSV_FILES = $(filter-out csv/1.csv, $(wildcard csv/*.csv))
