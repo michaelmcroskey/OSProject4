@@ -1,4 +1,4 @@
-# Operating Systems Project 4 [![Build Status](https://github.com/michaelmcroskey/OSProject4/blob/master/images/passing.svg)](https://travis-ci.org/facebook/react-native)
+# Operating Systems Project 4 [![Build Status](https://travis-ci.org/michaelmcroskey/OSProject4.svg?branch=master)](https://travis-ci.org/michaelmcroskey/OSProject4/)
 
 A project by [Michael McRoskey](http://michaelmcroskey.com/) (mmcrosk1) and [Maggie Thomann](http://maggiethomann.com/) (mthomann)
 
