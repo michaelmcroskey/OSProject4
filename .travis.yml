@@ -14,6 +14,8 @@ addons:
    - gcc-6
    - g++-6
    - cmake
+   - libcurl4-openssl-dev
+
 script:
  # Link gcc-6 and g++-6 to their standard commands
  - ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
