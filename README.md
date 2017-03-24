@@ -18,9 +18,20 @@ Operating Systems Project 4 is an SEO-Optimization tool that tracks how often sp
 6. **`Search.txt`**: Example search terms plain text file with each term on its own line
 7. **`Sites.txt`**: Example sites plain text file with each `http://`-prefixed URL on its own line
 8. **`README.md`**: Describes how to build, run, and configure code
+9. **`EC1.txt`**: Extra credit description
+10. **`html/`**
+⋅⋅11. **`1.html`**: Webpage to view results of `1.csv`. Similarly, `n.html` where `n` is an integer will show the results of `n.csv`
+⋅⋅12. **`append.txt`**: file with minified html that gets appended to output to form `1.html`, `2.html`, etc.
+⋅⋅13. **`styles.css`**: CSS styles for html output
+14. **`csv/`**
+⋅⋅13. **`1.csv`**: first CSV file -- all generated CSV files will go here
+16. **`images/`**
+⋅⋅17. **`ec_screenshot.png`**: screenshot of extra credit at [http://localhost:8000/html/1.html]()
+
+<img src="images/ec_screenshot.png" width="500">
 
 ## System Requirements
-System should have a `g++` compiler installed at `/usr/bin/g++` and be able to compile with the following flags:
+System should have a `g++` compiler installed and be able to compile with the following flags:
 - `-g`
 - `-Wall` for errors
 - `-std=gnu++11` for C++11
@@ -29,11 +40,17 @@ System should have a `g++` compiler installed at `/usr/bin/g++` and be able to c
 
 ## Usage
 1. Edit `Config.txt`, `Search.txt`, and/or `Sites.txt` accordingly to configure options for number of threads, fetch period, URLs to parse, and search terms. See File Requirements below.
-1. Run `$ make` to build the executables.
-2. Run `$ site-tester Config.txt` to begin fetching/parsing URLs. The program will display to stdout each thread's actions.
+2. Run `$ make` to build the executables.
+3. Run `$ site-tester Config.txt` to begin fetching/parsing URLs. The program will display to stdout each thread's actions.
 4. After the first period, `site-tester` will output `1.csv`, `2.csv`, and so on in the current directory. You can view the word counts for various sites.
 5. To end the run, `CTRL-C` in the command line.
-5. Run `$ make clean` to delete `*.csv` files and executables.
+6. Run `$ make clean` to delete `*.csv` files and executables.
+
+### Extra Credit
+1. Run steps 1-5 above.
+2. `$ cd root_project_directory`
+3. `$ python -m SimpleHTTPServer`
+4. Navigate to [http://localhost:8000/html/1.html]() in a web browser and replace `1.html` with any html that's been generated.
 
 ## File Requirements
 

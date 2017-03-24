@@ -9,5 +9,5 @@ tool:	site-tester.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
-	rm -f $(PROGRAMS) *.csv *.html
+	rm -f $(PROGRAMS) csv/*.csv html/*.html
 	rm -r *.dSYM

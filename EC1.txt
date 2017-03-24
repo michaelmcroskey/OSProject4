@@ -1,0 +1,11 @@
+EC1.txt
+
+Full extra credit instructions can be found in README.md
+
+### Extra Credit
+1. Run steps 1-5 from README.md.
+2. `$ cd root_project_directory`
+3. `$ python -m SimpleHTTPServer`
+4. Navigate to [http://localhost:8000/html/1.html]() in a web browser and replace `1.html` with any html that's been generated.
+
+We used d3.js to visualize a bar graph based on how often certain terms are used. We had to use Python SimpleHTTPServer in order to do GET requests for the *.csv files. Right after outputting a csv file in site-tester.cpp, we output html by creating n.html which is a concatenation of a time variable and csv filename variable in Javascript syntax and append.txt, which contains most of the structure of our html.
