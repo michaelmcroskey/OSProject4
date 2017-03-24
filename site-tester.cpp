@@ -186,6 +186,29 @@ void output_to_file(string output_filename){
 	outputting = false;
 }
 
+// creates html file to compile data
+void output_to_html(string output_filename, string csv_filename){
+	outputting = true;
+	
+	ofstream html_1 ("html_1");
+	if (output.is_open()){
+	
+	// Output file
+	ofstream output ("html/" + output_filename);
+	if (output.is_open()){
+		output << "<html><body>";
+		output << current_time();
+		output << "Hello world: ";
+		output << csv_filename;
+		output << "</body></html>";
+		output.close();
+	} else {
+		file_error(output_filename);
+	}
+	cout << "[Outputting to file " << output_filename << "]" << endl;
+	outputting = false;
+}
+
 // Main Execution  ----------------------------
 int main(int argc, char *argv[]) {
 	
@@ -276,7 +299,9 @@ int main(int argc, char *argv[]) {
 		delete[] parse_threads;
 		
 		// Output results of fetch/parse to file
-		output_to_file(to_string(num++) + ".csv");
+		string output_csv = to_string(num) + ".csv";
+		output_to_file(output_csv);
+		output_to_html(to_string(num) + ".html", output_csv);
 		
 		// Wait
 		this_thread::sleep_for(chrono::seconds(period));

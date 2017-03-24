@@ -20,7 +20,7 @@ class LibCurl {
 LibCurl::LibCurl(string url){
 	
 	CURL *curl;
-	CURLcode res;
+	//CURLcode res;
 	std::string readBuffer;
 
 	curl = curl_easy_init();
@@ -29,9 +29,11 @@ LibCurl::LibCurl(string url){
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 		/* complete within 20000 milliseconds */
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 20000L);
-		res = curl_easy_perform(curl);
+		//res = curl_easy_perform(curl);
+		curl_easy_perform(curl);
 		curl_easy_cleanup(curl);
 
 		libcurl_url = readBuffer;
