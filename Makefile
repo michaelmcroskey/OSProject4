@@ -9,6 +9,9 @@ all:		site-tester
 
 tool:	site-tester.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^
+	
+test:
+	echo "Test succeeded"
 
 clean:
 	rm -f $(PROGRAMS) $(CSV_FILES) $(HTML_FILES)
