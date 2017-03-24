@@ -34,7 +34,7 @@ Operating Systems Project 4 is an SEO-Optimization tool that tracks how often sp
 System should have a `g++` compiler installed and be able to compile with the following flags:
 - `-g`
 - `-Wall` for errors
-- `-std=gnu++11` for C++11
+- `-std=c++11` for C++11
 - `-lpthread` for threading
 - `-lcurl` for [libcurl](https://curl.haxx.se/libcurl/) library 
 
